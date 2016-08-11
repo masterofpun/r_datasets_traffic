@@ -1,24 +1,21 @@
-# This is a template for a Python scraper on morph.io (https://morph.io)
-# including some code snippets below that you should find helpful
+import json,requests,sqlite3
 
-# import scraperwiki
-# import lxml.html
-#
-# # Read in a page
-# html = scraperwiki.scrape("http://foo.com")
-#
-# # Find something on the page using css selectors
-# root = lxml.html.fromstring(html)
-# root.cssselect("div[align='left']")
-#
-# # Write out to the sqlite database using scraperwiki library
-# scraperwiki.sqlite.save(unique_keys=['name'], data={"name": "susan", "occupation": "software developer"})
-#
-# # An arbitrary query against the database
-# scraperwiki.sql.select("* from data where 'name'='peter'")
+headers = {'User-Agent':'Python script gathering traffic data once a day; contact at: reddit.com/u/hypd09 (gzip)', 'Accept-Encoding': 'gzip', 'Content-Encoding': 'gzip'}
+req = requests.Session()
 
-# You don't have to do things with the ScraperWiki and lxml libraries.
-# You can use whatever libraries you want: https://morph.io/documentation/python
-# All that matters is that your final data is written to an SQLite database
-# called "data.sqlite" in the current working directory which has at least a table
-# called "data".
+DB_FILE = 'data.sqlite'
+conn = sqlite3.connect(DB_FILE)
+
+c = conn.cursor()
+
+c.execute('CREATE TABLE IF NOT EXISTS data (time INTEGER PRIMARY KEY, uniques INTEGER, pageviews INTEGER)')
+
+link = 'http://www.reddit.com/r/datasets/about/traffic/.json'
+
+data = json.loads(req.get(link,headers=headers).text)
+
+for hour in data['hour']:
+    c.execute('INSERT OR REPLACE INTO data VALUES (?,?,?)',hour)
+    
+conn.commit()
+c.close()
